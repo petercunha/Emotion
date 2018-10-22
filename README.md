@@ -3,6 +3,7 @@ This software recognizes human faces and their corresponding emotions from a vid
 
 ![Demo](https://github.com/petercunha/Emotion/blob/master/demo/demo.gif?raw=true)
 
+
 ## Installation
 
 Clone the repository:
@@ -36,11 +37,13 @@ Once the dependencies are installed, you can run the project.
 - Run the train_emotion_classification.py file:
 `python3 train_emotion_classifier.py`
 
+
 ## Deep Learning Model
 
 The model used is from this [research paper](https://github.com/oarriaga/face_classification/blob/master/report.pdf) written by Octavio Arriaga, Paul G. Plöger, and Matias Valdenegro.
 
 ![Model](https://i.imgur.com/vr9yDaF.png?1)
+
 
 ## Credit
 
