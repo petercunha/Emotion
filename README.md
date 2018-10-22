@@ -3,6 +3,29 @@ This software recognizes human faces and their corresponding emotions from a vid
 
 ![Demo](https://github.com/petercunha/Emotion/blob/master/demo/demo.gif?raw=true)
 
+## Installation
+
+Clone the repository:
+```
+git clone https://github.com/petercunha/Emotion.git
+cd Emotion/
+```
+
+Install these dependencies with `pip3 install <module name>`
+-	tensorflow
+-	numpy
+-	scipy
+-	opencv-python
+-	pillow
+-	pandas
+-	matplotlib
+-	h5py
+-	keras
+
+Once the dependencies are installed, you can run the project.
+`python3 emotions.py`
+
+
 ## To train new models for emotion classification
 
 - Download the fer2013.tar.gz file from [here](https://www.kaggle.com/c/challenges-in-representation-learning-facial-expression-recognition-challenge/data)
