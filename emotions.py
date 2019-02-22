@@ -1,3 +1,4 @@
+import tensorflow as tf
 import cv2
 import numpy as np
 from keras.models import load_model
@@ -9,7 +10,6 @@ from utils.inference import draw_bounding_box
 from utils.inference import apply_offsets
 from utils.inference import load_detection_model
 from utils.preprocessor import preprocess_input
-
 USE_WEBCAM = True # If false, loads video file source
 
 # parameters for loading data and images
@@ -21,6 +21,11 @@ frame_window = 10
 emotion_offsets = (20, 40)
 
 # loading models
+
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+session = tf.Session(config=config)
+graph = session.graph
 face_cascade = cv2.CascadeClassifier('./models/haarcascade_frontalface_default.xml')
 emotion_classifier = load_model(emotion_model_path)
 
@@ -33,7 +38,7 @@ emotion_window = []
 # starting video streaming
 
 cv2.namedWindow('window_frame')
-video_capture = cv2.VideoCapture(0)
+#video_capture = cv2.VideoCapture(0)
 
 # Select video or webcam feed
 cap = None
@@ -42,64 +47,68 @@ if (USE_WEBCAM == True):
 else:
     cap = cv2.VideoCapture('./demo/dinner.mp4') # Video file source
 
-while cap.isOpened(): # True:
-    ret, bgr_image = cap.read()
+with graph.as_default():
+    while cap.isOpened(): # True:
+        ret, bgr_image = cap.read()
+        if ret:
+            #bgr_image = video_capture.read()[1]
+            gray_image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2GRAY)
+            rgb_image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2RGB)
 
-    #bgr_image = video_capture.read()[1]
+            faces = face_cascade.detectMultiScale(gray_image, scaleFactor=1.1, minNeighbors=5,
+        			minSize=(30, 30), flags=cv2.CASCADE_SCALE_IMAGE)
 
-    gray_image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2GRAY)
-    rgb_image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2RGB)
+            for face_coordinates in faces:
 
-    faces = face_cascade.detectMultiScale(gray_image, scaleFactor=1.1, minNeighbors=5,
-			minSize=(30, 30), flags=cv2.CASCADE_SCALE_IMAGE)
+                x1, x2, y1, y2 = apply_offsets(face_coordinates, emotion_offsets)
+                gray_face = gray_image[y1:y2, x1:x2]
+                try:
+                    gray_face = cv2.resize(gray_face, (emotion_target_size))
+                    print (type(gray_face)) 
+                except Exception as e:
+                    continue
+                gray_face = preprocess_input(gray_face, True)
+                gray_face = np.expand_dims(gray_face, 0)
+                gray_face = np.expand_dims(gray_face, -1)
+                print (">>>>>>>>>", gray_face.shape)
+                print (gray_face.shape)
+                emotion_prediction = emotion_classifier.predict(gray_face)
+                emotion_probability = np.max(emotion_prediction)
+                emotion_label_arg = np.argmax(emotion_prediction)
+                emotion_text = emotion_labels[emotion_label_arg]
+                emotion_window.append(emotion_text)
 
-    for face_coordinates in faces:
+                if len(emotion_window) > frame_window:
+                    emotion_window.pop(0)
+                try:
+                    emotion_mode = mode(emotion_window)
+                except:
+                    continue
 
-        x1, x2, y1, y2 = apply_offsets(face_coordinates, emotion_offsets)
-        gray_face = gray_image[y1:y2, x1:x2]
-        try:
-            gray_face = cv2.resize(gray_face, (emotion_target_size))
-        except:
-            continue
+                if emotion_text == 'angry':
+                    color = emotion_probability * np.asarray((255, 0, 0))
+                elif emotion_text == 'sad':
+                    color = emotion_probability * np.asarray((0, 0, 255))
+                elif emotion_text == 'happy':
+                    color = emotion_probability * np.asarray((255, 255, 0))
+                elif emotion_text == 'surprise':
+                    color = emotion_probability * np.asarray((0, 255, 255))
+                else:
+                    color = emotion_probability * np.asarray((0, 255, 0))
 
-        gray_face = preprocess_input(gray_face, True)
-        gray_face = np.expand_dims(gray_face, 0)
-        gray_face = np.expand_dims(gray_face, -1)
-        emotion_prediction = emotion_classifier.predict(gray_face)
-        emotion_probability = np.max(emotion_prediction)
-        emotion_label_arg = np.argmax(emotion_prediction)
-        emotion_text = emotion_labels[emotion_label_arg]
-        emotion_window.append(emotion_text)
+                color = color.astype(int)
+                color = color.tolist()
 
-        if len(emotion_window) > frame_window:
-            emotion_window.pop(0)
-        try:
-            emotion_mode = mode(emotion_window)
-        except:
-            continue
+                draw_bounding_box(face_coordinates, rgb_image, color)
+                draw_text(face_coordinates, rgb_image, emotion_mode,
+                          color, 0, -45, 1, 1)
 
-        if emotion_text == 'angry':
-            color = emotion_probability * np.asarray((255, 0, 0))
-        elif emotion_text == 'sad':
-            color = emotion_probability * np.asarray((0, 0, 255))
-        elif emotion_text == 'happy':
-            color = emotion_probability * np.asarray((255, 255, 0))
-        elif emotion_text == 'surprise':
-            color = emotion_probability * np.asarray((0, 255, 255))
-        else:
-            color = emotion_probability * np.asarray((0, 255, 0))
-
-        color = color.astype(int)
-        color = color.tolist()
-
-        draw_bounding_box(face_coordinates, rgb_image, color)
-        draw_text(face_coordinates, rgb_image, emotion_mode,
-                  color, 0, -45, 1, 1)
-
-    bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
-    cv2.imshow('window_frame', bgr_image)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+            bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
+            cv2.imshow('window_frame', bgr_image)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
 cap.release()
 cv2.destroyAllWindows()
+
+
