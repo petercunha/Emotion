@@ -33,7 +33,6 @@ emotion_window = []
 # starting video streaming
 
 cv2.namedWindow('window_frame')
-video_capture = cv2.VideoCapture(0)
 
 # Select video or webcam feed
 cap = None
