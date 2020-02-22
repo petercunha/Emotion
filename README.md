@@ -26,6 +26,12 @@ Install these dependencies with `pip3 install <module name>`
 Once the dependencies are installed, you can run the project.
 `python3 emotions.py`
 
+If there's something wrong with the versions, try to downgrade your python before you install the depenencies
+> conda install python=3.6.2   (I used anaconda to get this version)
+- And after you install the dependencies, downgrade your scipy
+> pip install scipy==1.2.1
+- Ignore the warning"ERROR: tensorflow 2.1.0 has requirement scipy==1.4.1" and run the project
+`python3 emotions.py
 
 ## To train new models for emotion classification
 
